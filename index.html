@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>triXter NFT - Public Mint</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.10.0/web3.min.js"></script>
+  <style>
+    body { background-color: #212529; color: #e5e7eb; }
+    .mint-btn {
+      background-color: #b88cad;
+      transition: all 0.3s;
+    }
+    .mint-btn:hover {
+      background-color: #d4a3c2;
+      transform: scale(1.05);
+    }
+    .logo {
+      filter: drop-shadow(0 0 25px rgba(184, 140, 173, 0.6));
+    }
+  </style>
+</head>
+<body class="min-h-screen font-mono">
+  <div class="max-w-2xl mx-auto pt-12 px-6 text-center">
+    
+    <!-- Логотип -->
+    <img src="logo.png" alt="triXter NFT" class="logo mx-auto w-64 mb-8" 
+         alt="triXter NFT" class="logo mx-auto w-64 mb-8">
+
+    <h1 class="text-5xl font-bold mb-1">triXter NFT</h1>
+    <p class="text-2xl text-purple-300 mb-10">Public Mint</p>
+
+    <!-- Прогресс -->
+    <div class="mb-10">
+      <div class="flex justify-between text-sm mb-2 font-medium">
+        <span>Minted</span>
+        <span id="minted-count">777 / 70,000</span>
+      </div>
+      <div class="h-4 bg-gray-700 rounded-full overflow-hidden">
+        <div id="progress-bar" class="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all" style="width: 1.11%"></div>
+      </div>
+      <p id="remaining" class="text-sm text-purple-400 mt-2">69,223 remaining</p>
+    </div>
+
+    <div class="bg-gray-900/60 border border-gray-700 rounded-3xl p-10">
+      <p class="text-3xl mb-2">Цена за 1 NFT</p>
+      <p class="text-6xl font-bold text-white mb-8">77.7 <span class="text-3xl text-gray-400">MATIC</span></p>
+
+      <div class="mb-8">
+        <label class="block text-sm mb-3 text-gray-400">Количество (1–10)</label>
+        <input type="number" id="amount" value="1" min="1" max="10"
+               class="w-40 text-center text-5xl bg-gray-800 border border-gray-600 rounded-2xl py-6 focus:outline-none focus:border-pink-400">
+      </div>
+
+      <button onclick="mint()" 
+              class="mint-btn w-full py-7 text-2xl font-bold rounded-2xl text-black shadow-lg">
+        MINT NOW
+      </button>
+    </div>
+
+    <p class="text-sm text-gray-500 mt-8">Подключите MetaMask • Polygon Network</p>
+  </div>
+
+  <script>
+    let web3, contract;
+    const contractAddress = "0x1D5B687Bc6Cb63c8A7A05B2Fc7C9f3F4538C1D61";
+
+    const abi = [{"inputs":[{"internalType":"uint256","name":"quantity","type":"uint256"}],"name":"mint","outputs":[],"stateMutability":"payable","type":"function"}];
+
+    // Авто-переключение на Polygon
+    async function switchToPolygon() {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x89' }] // Polygon Mainnet
+        });
+      } catch (error) {
+        if (error.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x89',
+              chainName: 'Polygon Mainnet',
+              nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+              rpcUrls: ['https://polygon-rpc.com'],
+              blockExplorerUrls: ['https://polygonscan.com']
+            }]
+          });
+        }
+      }
+    }
+
+    async function connectWallet() {
+      if (!window.ethereum) return alert("Установите MetaMask!");
+      
+      web3 = new Web3(window.ethereum);
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      await switchToPolygon();
+      
+      contract = new web3.eth.Contract(abi, contractAddress);
+    }
+
+    async function mint() {
+      if (!contract) {
+        await connectWallet();
+      }
+
+      const amount = parseInt(document.getElementById("amount").value);
+      const totalPrice = 77.7 * amount;
+
+      try {
+        await contract.methods.mint(amount).send({
+          from: (await web3.eth.getAccounts())[0],
+          value: web3.utils.toWei(totalPrice.toString(), 'ether')
+        });
+        alert("🎉 Поздравляем! Вы успешно заминтили triXter NFT!");
+      } catch (err) {
+        alert("Ошибка: " + err.message);
+      }
+    }
+
+    // Инициализация
+    window.onload = () => {
+      const minted = 777;
+      const total = 70000;
+      document.getElementById("minted-count").textContent = `${minted} / ${total}`;
+      document.getElementById("progress-bar").style.width = `${(minted / total) * 100}%`;
+      document.getElementById("remaining").textContent = `${total - minted} remaining`;
+    };
+  </script>
+</body>
+</html>
