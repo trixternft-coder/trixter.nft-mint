@@ -6,12 +6,10 @@
   <title>triXter NFT - Public Mint</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.10.0/web3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  
   <style>
-    body { 
-      background-color: #212529; 
-      color: #e5e7eb; 
-      font-family: Arial, Helvetica, sans-serif;
-    }
+    body { background-color: #212529; color: #e5e7eb; font-family: Arial, Helvetica, sans-serif; }
     .mint-btn {
       background: linear-gradient(to right, #3b82f6, #b88cad);
       transition: all 0.4s;
@@ -20,21 +18,25 @@
       background: linear-gradient(to right, #60a5fa, #d4a3c2);
       transform: scale(1.05);
     }
-    .logo {
-      filter: drop-shadow(0 0 25px rgba(184, 140, 173, 0.6));
-    }
+    .logo { filter: drop-shadow(0 0 30px rgba(184, 140, 173, 0.7)); }
   </style>
 </head>
 <body class="min-h-screen">
-  <div class="max-w-2xl mx-auto pt-12 px-6 text-center">
+  <div class="max-w-2xl mx-auto pt-8 px-6">
     
-    <!-- Логотип -->
-    <img src="logo.png" alt="triXter NFT" class="logo mx-auto w-64 mb-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+      <img src="logo.png" alt="triXter NFT" class="logo h-16">
+      <button onclick="connectWallet()" id="connectBtn"
+              class="px-6 py-3 bg-white text-black font-bold rounded-2xl hover:bg-gray-200 transition">
+        Connect Wallet
+      </button>
+    </div>
 
-    <h1 class="text-5xl font-bold mb-1">triXter NFT</h1>
-    <p class="text-2xl text-purple-300 mb-10">Public Mint</p>
+    <h1 class="text-5xl font-bold text-center mb-1">triXter NFT</h1>
+    <p class="text-2xl text-purple-300 text-center mb-10">Public Mint</p>
 
-    <!-- Прогресс -->
+    <!-- Progress -->
     <div class="mb-10">
       <div class="flex justify-between text-sm mb-2 font-medium">
         <span>Minted</span>
@@ -43,17 +45,17 @@
       <div class="h-4 bg-gray-700 rounded-full overflow-hidden">
         <div id="progress-bar" class="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all" style="width: 1.11%"></div>
       </div>
-      <p id="remaining" class="text-sm text-purple-400 mt-2">69,223 remaining</p>
+      <p id="remaining" class="text-sm text-purple-400 mt-2 text-center">69,223 remaining</p>
     </div>
 
-    <div class="bg-gray-900/60 border border-gray-700 rounded-3xl p-10">
-      <p class="text-3xl mb-2">Price per NFT</p>
-      <p class="text-6xl font-bold text-white mb-8">77.7 <span class="text-3xl text-gray-400">MATIC</span></p>
+    <div class="bg-gray-900/70 border border-gray-700 rounded-3xl p-10">
+      <p class="text-3xl mb-2 text-center">Price per NFT</p>
+      <p class="text-6xl font-bold text-white text-center mb-8">77.7 <span class="text-3xl text-gray-400">MATIC</span></p>
 
       <div class="mb-8">
-        <label class="block text-sm mb-3 text-gray-400">Quantity (1–10)</label>
+        <label class="block text-sm mb-3 text-gray-400 text-center">Quantity (max 10)</label>
         <input type="number" id="amount" value="1" min="1" max="10"
-               class="w-40 text-center text-5xl bg-gray-800 border border-gray-600 rounded-2xl py-6 focus:outline-none focus:border-pink-400">
+               class="w-40 mx-auto block text-center text-5xl bg-gray-800 border border-gray-600 rounded-2xl py-6 focus:outline-none focus:border-pink-400">
       </div>
 
       <button onclick="mint()" 
@@ -62,53 +64,72 @@
       </button>
     </div>
 
-    <p class="text-sm text-gray-500 mt-8">Please connect MetaMask • Polygon Network</p>
+    <p id="wallet-info" class="text-center text-sm text-gray-500 mt-6"></p>
   </div>
 
   <script>
-    let web3, contract;
+    let web3, contract, userAddress;
     const contractAddress = "0x1D5B687Bc6Cb63c8A7A05B2Fc7C9f3F4538C1D61";
 
     const abi = [{"inputs":[{"internalType":"uint256","name":"quantity","type":"uint256"}],"name":"mint","outputs":[],"stateMutability":"payable","type":"function"}];
+
+    async function connectWallet() {
+      if (!window.ethereum) return alert("Please install MetaMask!");
+
+      web3 = new Web3(window.ethereum);
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      userAddress = accounts[0];
+
+      await switchToPolygon();
+      contract = new web3.eth.Contract(abi, contractAddress);
+
+      document.getElementById("wallet-info").innerHTML = 
+        `Connected: <span class="text-purple-400">${userAddress.slice(0,6)}...${userAddress.slice(-4)}</span>`;
+      document.getElementById("connectBtn").textContent = "Connected";
+    }
 
     async function switchToPolygon() {
       try {
         await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x89' }] });
       } catch (error) {
         if (error.code === 4902) {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [{ chainId: '0x89', chainName: 'Polygon Mainnet', nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 }, rpcUrls: ['https://polygon-rpc.com'], blockExplorerUrls: ['https://polygonscan.com'] }]
-          });
+          await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ 
+            chainId: '0x89', 
+            chainName: 'Polygon Mainnet', 
+            nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 }, 
+            rpcUrls: ['https://polygon-rpc.com'],
+            blockExplorerUrls: ['https://polygonscan.com']
+          }]});
         }
       }
     }
 
-    async function connectWallet() {
-      if (!window.ethereum) return alert("Please install MetaMask!");
-      web3 = new Web3(window.ethereum);
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
-      await switchToPolygon();
-      contract = new web3.eth.Contract(abi, contractAddress);
-    }
-
     async function mint() {
-      if (!contract) await connectWallet();
+      if (!contract) {
+        await connectWallet();
+        return;
+      }
 
       const amount = parseInt(document.getElementById("amount").value);
       const totalPrice = 77.7 * amount;
 
       try {
         await contract.methods.mint(amount).send({
-          from: (await web3.eth.getAccounts())[0],
+          from: userAddress,
           value: web3.utils.toWei(totalPrice.toString(), 'ether')
         });
-        alert("🎉 Congratulations! You successfully minted triXter NFT!");
+
+        // Конфетти
+        confetti({ particleCount: 200, spread: 70, origin: { y: 0.6 } });
+        setTimeout(() => confetti({ particleCount: 150, angle: 60, spread: 70, origin: { y: 0.6 } }), 300);
+
+        alert(`🎉 Congratulations! You successfully minted ${amount} triXter NFT!`);
       } catch (err) {
-        alert("Mint error: " + err.message);
+        alert("Mint error: " + (err.message || err));
       }
     }
 
+    // Инициализация
     window.onload = () => {
       const minted = 777;
       const total = 70000;
