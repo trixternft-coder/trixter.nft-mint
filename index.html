@@ -21,20 +21,21 @@
     .mint-btn:hover, .connect-btn:hover {
       background: linear-gradient(to right, #60a5fa, #d4a3c2);
       transform: scale(1.05);
+      color: #f8d7e8 !important;
+      text-shadow: 0 0 15px #f8d7e8, 0 0 25px #e8b4d4;
     }
     .logo {
-      filter: drop-shadow(0 0 30px rgba(184, 140, 173, 0.7));
+      filter: drop-shadow(0 0 35px rgba(184, 140, 173, 0.8));
     }
   </style>
 </head>
 <body class="min-h-screen">
-  <div class="max-w-2xl mx-auto pt-16 px-6 text-center">
+  <div class="max-w-2xl mx-auto pt-20 px-6 text-center">
     
     <!-- Логотип -->
-    <img src="logo.png" alt="triXter NFT" class="logo mx-auto w-72 mb-10">
+    <img src="logo.png" alt="triXter NFT" class="logo mx-auto w-80 mb-6">
 
-    <h1 class="text-5xl font-bold mb-1">triXter NFT</h1>
-    <p class="text-2xl text-purple-300 mb-10">Public Mint</p>
+    <p class="text-3xl text-purple-300 mb-12">Public Mint</p>
 
     <!-- Progress -->
     <div class="mb-10">
@@ -69,7 +70,7 @@
       </button>
     </div>
 
-    <p id="wallet-info" class="text-center text-sm text-gray-500 mt-6 min-h-[24px]"></p>
+    <p id="wallet-info" class="text-center text-sm text-gray-500 mt-8 min-h-[24px]"></p>
   </div>
 
   <script>
